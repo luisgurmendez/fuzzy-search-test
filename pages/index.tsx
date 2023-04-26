@@ -1,3 +1,4 @@
+import FlexSearch from 'flexsearch';
 import Fuse from 'fuse.js';
 import { fuzzyFilter } from 'fuzzbunny';
 import { matchSorter } from 'match-sorter';
@@ -9,6 +10,7 @@ interface Ammenity {
 
 interface SearchResults {
   fuse: Ammenity[];
+  flexsearch: Ammenity[];
   matchSorter: Ammenity[];
   fuzzbunny: Ammenity[];
 }
@@ -21,6 +23,7 @@ export default function Home() {
 
   const [results, setResults] = useState<SearchResults>({
     fuse: [],
+    flexsearch: [],
     matchSorter: [],
     fuzzbunny: [],
   });
@@ -41,6 +44,7 @@ export default function Home() {
 
       <div className='flex'>
         <SearchResult results={results.fuse} name="fuse" />
+        <SearchResult results={results.flexsearch} name="flexsearch" />
         <SearchResult results={results.matchSorter} name="matchSorter" />
         <SearchResult results={results.fuzzbunny} name="fuzzbunny" />
       </div>
@@ -54,16 +58,19 @@ export default function Home() {
 
 function useSearch(ammenities: Ammenity[]): (query: string) => SearchResults {
   const fuseSearch = useFuse(ammenities);
+  const flexsearchSearch = useFlexsearch(ammenities)
   const matchSorterSearch = useMatchSorter(ammenities)
   const fuzzbunnySearch = useFuzzbunny(ammenities)
 
   return useCallback((query: string) => {
     const fuseResults = fuseSearch(query)
+    const flexsearchResults = flexsearchSearch(query)
     const matchSorterResults = matchSorterSearch(query)
     const fuzzbunnyResults = fuzzbunnySearch(query)
 
     const results: SearchResults = {
       fuse: fuseResults,
+      flexsearch: flexsearchResults,
       matchSorter: matchSorterResults,
       fuzzbunny: fuzzbunnyResults
     }
@@ -71,21 +78,33 @@ function useSearch(ammenities: Ammenity[]): (query: string) => SearchResults {
     return results;
   }, [
     fuseSearch,
+    flexsearchSearch,
     matchSorterSearch,
     fuzzbunnySearch,
   ]
   );
 }
 
-
 function useFuse(ammenities: Ammenity[]) {
-  const fuse = useMemo(() => new Fuse(ammenities, { includeScore: true, keys: ["name"] }), [ammenities])
+  const fuse = useMemo(() => new Fuse(ammenities, { ignoreFieldNorm: true, threshold: 0.3, findAllMatches: true, ignoreLocation: true, includeScore: true, keys: ["name"] }), [ammenities])
   return useCallback((query: string) => {
     if (query === '') return [];
     return fuse.search(query).map(r => r.item);
   }, [fuse]);
 }
 
+
+function useFlexsearch(ammenities: Ammenity[]) {
+  return useCallback((query: string) => {
+    const index = new (FlexSearch as any).Index(); //create();
+    ammenities.forEach((h, i) => {
+      index.add(h.name, h.name);
+    })
+
+    console.log(index.search(query, { suggest: true }));
+    return index.search(query).map((s: string) => ({ name: s }));
+  }, [ammenities]);
+}
 
 function useMatchSorter(ammenities: Ammenity[]) {
   return useCallback((query: string) => {
