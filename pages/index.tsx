@@ -1,16 +1,14 @@
-import FlexSearch from 'flexsearch';
 import Fuse from 'fuse.js';
 import { fuzzyFilter } from 'fuzzbunny';
 import { matchSorter } from 'match-sorter';
 import { ChangeEvent, useCallback, useMemo, useState } from 'react';
 
-interface Ammenity{
+interface Ammenity {
   name: string;
 }
 
-interface SearchResults{
+interface SearchResults {
   fuse: Ammenity[];
-  flexsearch: Ammenity[];
   matchSorter: Ammenity[];
   fuzzbunny: Ammenity[];
 }
@@ -20,10 +18,9 @@ export default function Home() {
   const ammenities = useAmmenities();
   const [query, setQuery] = useState('');
   const search = useSearch(ammenities);
-  
+
   const [results, setResults] = useState<SearchResults>({
     fuse: [],
-    flexsearch: [],
     matchSorter: [],
     fuzzbunny: [],
   });
@@ -40,11 +37,10 @@ export default function Home() {
       className={`flex min-h-screen flex-col items-center p-24`}
     >
       <span className="text-4xl mb-8 font-medium ">Buscador de hoteles Madrid</span>
-      <input className="p-2 rounded-md" value={query} placeholder="Busca por nombre" onChange={handleInputChange}/>
+      <input className="p-2 rounded-md" value={query} placeholder="Busca por nombre" onChange={handleInputChange} />
 
       <div className='flex'>
-        <SearchResult results={results.fuse} name="fuse"  />
-        <SearchResult results={results.flexsearch} name="flexsearch" />
+        <SearchResult results={results.fuse} name="fuse" />
         <SearchResult results={results.matchSorter} name="matchSorter" />
         <SearchResult results={results.fuzzbunny} name="fuzzbunny" />
       </div>
@@ -56,73 +52,58 @@ export default function Home() {
 }
 
 
-function useSearch(ammenities: Ammenity[]): (query: string) => SearchResults{
+function useSearch(ammenities: Ammenity[]): (query: string) => SearchResults {
   const fuseSearch = useFuse(ammenities);
-  const flexsearchSearch = useFlexsearch(ammenities)
   const matchSorterSearch = useMatchSorter(ammenities)
   const fuzzbunnySearch = useFuzzbunny(ammenities)
 
-return useCallback((query: string)=>{
-  const fuseResults = fuseSearch(query)
-  const flexsearchResults = flexsearchSearch(query)
-  const matchSorterResults = matchSorterSearch(query)
-  const fuzzbunnyResults = fuzzbunnySearch(query)
+  return useCallback((query: string) => {
+    const fuseResults = fuseSearch(query)
+    const matchSorterResults = matchSorterSearch(query)
+    const fuzzbunnyResults = fuzzbunnySearch(query)
 
-  const results: SearchResults = {
+    const results: SearchResults = {
       fuse: fuseResults,
-      flexsearch: flexsearchResults,
       matchSorter: matchSorterResults,
       fuzzbunny: fuzzbunnyResults
     }
 
-  return results;
+    return results;
   }, [
-      fuseSearch,
-      flexsearchSearch,
-      matchSorterSearch,
-      fuzzbunnySearch,
-    ]
+    fuseSearch,
+    matchSorterSearch,
+    fuzzbunnySearch,
+  ]
   );
 }
 
 
-function useFuse(ammenities: Ammenity[]){
-  const fuse = useMemo(() => new Fuse(ammenities, {includeScore: true, keys: ["name"]}), [ammenities])
-  return useCallback((query:string) => {
-      if(query === '') return [];
-      return fuse.search(query).map(r => r.item);
+function useFuse(ammenities: Ammenity[]) {
+  const fuse = useMemo(() => new Fuse(ammenities, { includeScore: true, keys: ["name"] }), [ammenities])
+  return useCallback((query: string) => {
+    if (query === '') return [];
+    return fuse.search(query).map(r => r.item);
   }, [fuse]);
 }
 
 
-function useFlexsearch(ammenities: Ammenity[]){
-  return useCallback((query:string) => {
-    // const index = FlexSearch.create();
-    // ammenities.forEach((h, i) => {
-    //     index.add(i,h.name);
-    // })
-    return [];
-    // return index.search(query);
-  }, [ammenities]);
-}
-
-function useMatchSorter(ammenities: Ammenity[]){
-  return useCallback((query:string) => {
-    if(query === '') return [];
-    return matchSorter(ammenities, query, {keys: ['name']})
+function useMatchSorter(ammenities: Ammenity[]) {
+  return useCallback((query: string) => {
+    if (query === '') return [];
+    return matchSorter(ammenities, query, { keys: ['name'] })
   }, [ammenities]);
 }
 
 
-function useFuzzbunny(ammenities: Ammenity[]){
-  return useCallback((query:string) => {
-      if(query === '') return [];
-      return fuzzyFilter(ammenities, query, {fields: [`name`]}).map(a => a.item);
+function useFuzzbunny(ammenities: Ammenity[]) {
+  return useCallback((query: string) => {
+    if (query === '') return [];
+    return fuzzyFilter(ammenities, query, { fields: [`name`] }).map(a => a.item);
   }, [ammenities]);
 }
 
-function useAmmenities(): Ammenity[]{
-  return useMemo(()=>{
+function useAmmenities(): Ammenity[] {
+  return useMemo(() => {
     const hotels = [
       "Hotel Riu Plaza España",
       "Hard Rock Hotel Madrid",
@@ -214,33 +195,33 @@ function useAmmenities(): Ammenity[]{
       "Air Rooms Madrid by Premium Traveller",
       "Hotel ILUNION Atrium",
       "Hotel Villa De Barajas"
-  ]
+    ]
 
-  return hotels.map(h => ({name: h}))
+    return hotels.map(h => ({ name: h }))
   }, []);
 }
 
 
 
-const SearchResult = ({results, name}: {results: Ammenity[], name: string}) => {
+const SearchResult = ({ results, name }: { results: Ammenity[], name: string }) => {
 
   return (
     <div className="border-1 rounded-sm shadow-sm m-4 bg-white p-8">
-        <span className="text-lg font-medium ">{name}</span>
-        <table className="text-sm font-light">
-          <thead className="border-b font-medium dark:border-neutral-500">
-            <tr>
-              <th scope="col" className="px-2 py-2">#</th>
-              <th scope="col" className="px-2 py-2">Nombre</th>
-            </tr>
-          </thead>
-          <tbody>
-            {results.map((r,i) => (<tr key={i} className="border-b dark:border-neutral-500">
-              <td className="whitespace-nowrap px-2 py-2 font-medium">{i}</td>
-              <td className="px-2 py-2">{r.name}</td>
-            </tr>))}
-          </tbody>
-        </table>
+      <span className="text-lg font-medium ">{name}</span>
+      <table className="text-sm font-light">
+        <thead className="border-b font-medium dark:border-neutral-500">
+          <tr>
+            <th scope="col" className="px-2 py-2">#</th>
+            <th scope="col" className="px-2 py-2">Nombre</th>
+          </tr>
+        </thead>
+        <tbody>
+          {results.map((r, i) => (<tr key={i} className="border-b dark:border-neutral-500">
+            <td className="whitespace-nowrap px-2 py-2 font-medium">{i}</td>
+            <td className="px-2 py-2">{r.name}</td>
+          </tr>))}
+        </tbody>
+      </table>
     </div>
 
   )
