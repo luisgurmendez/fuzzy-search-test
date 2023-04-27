@@ -86,7 +86,16 @@ function useSearch(ammenities: Ammenity[]): (query: string) => SearchResults {
 }
 
 function useFuse(ammenities: Ammenity[]) {
-  const fuse = useMemo(() => new Fuse(ammenities, { ignoreFieldNorm: true, threshold: 0.3, findAllMatches: true, ignoreLocation: true, includeScore: true, keys: ["name"] }), [ammenities])
+  const fuse = useMemo(() => new Fuse(ammenities, {
+    ignoreFieldNorm: true,
+    threshold: 0.3,
+    findAllMatches: true,
+    ignoreLocation: true,
+    includeScore: true,
+    useExtendedSearch: true,
+    shouldSort: true,
+    keys: ["name"]
+  }), [ammenities])
   return useCallback((query: string) => {
     if (query === '') return [];
     return fuse.search(query).map(r => r.item);
